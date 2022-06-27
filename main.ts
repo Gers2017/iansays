@@ -1,15 +1,115 @@
 import { parse, Args } from "https://deno.land/std@0.119.0/flags/mod.ts";
 
 const flags = parse(Deno.args, {
-    boolean: ["help"],
+    boolean: ["help", "big", "wrap"],
     string: ["file", "text"],
 });
-const help_text =
-    "Usage: iansays --file filename.txt or iansays --text deno is awesome!";
+
+const usage_text =
+    "Usage: iansays [...FLAGS]\nExample:\niansays --file filename.txt or iansays --text deno is awesome!";
+
+const commands_text = "Available flags:\n\tfile, text, big, wrap, help";
+
+function print_help() {
+    console.log(usage_text);
+    console.log(commands_text);
+}
+
+const ian = `;;;;\\::;,;,.               ...
+'''''\\.....   .......    .  ..
+,''...  .. .',;cccc::;'.    ..
+ool:'.   ..:oxkxdooolll:.   ..
+::;,.    .:oxxl::::cc:::;.    
+.....  .'lo:;'...',:c;..'...  
+.,;:;,',lkdc:,'',:coxd,.,'..  
+':odocclxOkxoollooolloccc,... 
+ ...,:lxOxdooxxxddc,,;:cl, ...
+    .,oxkdloxxl::c:;,;:cc.    
+      .;ddlooc:;;::;;;:c,.    
+       ,occcc::lodolccll,   .;
+   ..'';ol:;,,,:c::;;:lo;  .,;
+  .,:;;;;::;,,'....';,;c,   .,
+  .,:;;;;,,,,,,''.',,',c'    .
+ .,:;;,,;;,,,;,,,',;,..:.     
+.,cc::::::;,,,,;;,,;'..'.     
+`;
+
+const ian2 = `;;;;;;\\;;;;;;;;,,,,',,'.....    ..'...            
+ccccccc\\ccccllc;;;'....                           
+::::::::\\cclc;;::'.                               
+',,,''',,\\;'.....                                 
+'''''......    .   .',;:ccc:;,..       .          
+cllllcc;,'.      .;clddxxxxddool:.     .          
+dxxxxkxoc'.     .:okKXX0Okkxxddddc.               
+ccllcc::,.     .;ok0Odlc:cclllcc:c;.              
+..........    .cxdlc,.....,:lc:'..,....           
+  .....''.....l00o:,....',;ldxo,..,'...           
+ ...,cdkkdlc;;kXKOkdoc::loxkOX0l;::,',.           
+   ..;ldxolclOXNXKOxxkkkkOkoclllodo;...           
+        .,llxKK0Oxxk0K0OOOx:,,::ldd;  ......      
+          ,x0KKOxox0KOdclllc;;:cldl.              
+.''.       .;oOOddkkxl:;::::;,;:cl;               
+.,'.        .:xkdddolcclodoolclool.     ...,;;;;,.
+.'.         .:xdlccccloxkOOkdoddxo'   .:llc:;,,'..
+..      .',,,lxxl:;;,;:cccc;;;:lkx'   .::;,'.. ...
+.      .;c::::cllc:;,'......,:;:oo.   .,;,,,.     
+.      .:lcc:;;,,,;;;;,'...';:,,ll.    ......     
+:.    .,::;;;;::;;,,,,,,,,,;:,.'cl.               
+,.    'clcc:;;;;;;;;:::;,,,;:' .;:.               
+'....,loocccclccc:;,',;:::;;:.  .'.            ...
+`;
+
+
+function main(flags: Args) {
+    if (flags.help) {
+        print_help();
+        return;
+    }
+    const wrap = flags.wrap;
+    const use_big = flags.big;
+    const max_line_length = 100;
+    const text = get_text(flags);
+    let lines = text.split("\n");
+
+    if (wrap) {
+        while (get_max_width(lines) > max_line_length) {
+            lines = lines.reduce<string[]>((prev, line) => {
+                if (line.length > max_line_length) {
+                    const left = line
+                        .replaceAll("\n", "")
+                        .slice(0, max_line_length);
+                    const right = line.replaceAll("\n", "").slice(max_line_length);
+                    prev.push(left, right);
+                } else {
+                    prev.push(line);
+                }
+    
+                return prev;
+            }, []);
+        }
+    }
+
+    const max_width = get_max_width(lines);
+
+    const messages = lines.map((line) => {
+        const times = max_width - line.length;
+        return line + " ".repeat(times);
+    });
+
+    const text_box = build_text_box(messages, max_width);
+
+    console.log(text_box);
+
+    if (use_big) {
+        console.log(ian2);
+        return;
+    }
+    console.log(ian);
+}
 
 function get_text(flags: Args): string {
     if (!flags.file && !flags.text) {
-        console.log(help_text);
+        print_help();
         Deno.exit();
     }
 
@@ -55,56 +155,4 @@ function build_text_box(lines: string[], max_width: number) {
     return result.join("\n");
 }
 
-if (flags.help) {
-    console.log(help_text);
-    Deno.exit();
-}
-
-const max_line_length = 80;
-const text = get_text(flags);
-let lines = text.split("\n");
-
-while (get_max_width(lines) > max_line_length) {
-    lines = lines.reduce<string[]>((prev, line) => {
-        if (line.length > max_line_length) {
-            let left = line.replaceAll("\n", "").slice(0, max_line_length);
-            let right = line.replaceAll("\n", "").slice(max_line_length);
-            prev.push(left, right);
-        } else {
-            prev.push(line);
-        }
-
-        return prev;
-    }, []);
-}
-
-const max_width = get_max_width(lines);
-
-const messages = lines.map((line) => {
-    const times = max_width - line.length;
-    return line + " ".repeat(times);
-});
-
-const text_box = build_text_box(messages, max_width);
-
-const ian = `;;;;\\::;,;,.               ...
-'''''\\.....   .......    .  ..
-,''...  .. .',;cccc::;'.    ..
-ool:'.   ..:oxkxdooolll:.   ..
-::;,.    .:oxxl::::cc:::;.    
-.....  .'lo:;'...',:c;..'...  
-.,;:;,',lkdc:,'',:coxd,.,'..  
-':odocclxOkxoollooolloccc,... 
- ...,:lxOxdooxxxddc,,;:cl, ...
-    .,oxkdloxxl::c:;,;:cc.    
-      .;ddlooc:;;::;;;:c,.    
-       ,occcc::lodolccll,   .;
-   ..'';ol:;,,,:c::;;:lo;  .,;
-  .,:;;;;::;,,'....';,;c,   .,
-  .,:;;;;,,,,,,''.',,',c'    .
- .,:;;,,;;,,,;,,,',;,..:.     
-.,cc::::::;,,,,;;,,;'..'.     
-`;
-
-console.log(text_box);
-console.log(ian);
+main(flags);
